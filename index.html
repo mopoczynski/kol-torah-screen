@@ -77,6 +77,7 @@ main{position:absolute;left:40px;right:40px;top:128px;bottom:24px;display:grid;g
 /* ---------- donor wall ---------- */
 #wallCol .label{margin-bottom:12px}
 #wallCol h2{margin:0;font-family:"Playfair Display",serif;font-weight:600;font-size:45px;white-space:nowrap;line-height:1.05;letter-spacing:-.5px}
+#wallCol h2{margin-bottom:20px !important}
 #wallCol .intro{font-size:20px;color:var(--muted);margin:12px 0 22px;line-height:1.4}
 #wallBox{position:relative;flex:1 1 auto;overflow:hidden;border-top:1px solid var(--rule);
   -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 40px),transparent)}
@@ -97,19 +98,19 @@ main{position:absolute;left:40px;right:40px;top:128px;bottom:24px;display:grid;g
 .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}
 .slide.on{opacity:1}
 .slide .bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(24px) brightness(.8);opacity:.6}
-.slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%}
 
-#plaque{border-radius:6px !important;flex:0 0 252px;min-height:0;overflow:hidden;border-radius:3px;padding:14px;
+#plaque{border-radius:6px !important;flex:1 1 auto;min-height:0;overflow:hidden;border-radius:3px;padding:14px;
   background:linear-gradient(160deg,var(--plq1) 0%,var(--plq2) 60%,#D3B46C 100%);color:var(--plq-ink)}
 #plaque .inner{height:100%;border:1px solid var(--plq-line);display:flex;flex-direction:column;align-items:center;padding:16px 40px 14px;text-align:center}
-#plaqueTitle{margin:0;font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:50px;line-height:1;direction:rtl}
+#plaqueTitle{margin:0;font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:62px;line-height:1;direction:rtl}
 #plaqueSub{display:none;font-weight:800;font-size:13px;letter-spacing:.4em;text-transform:uppercase;margin:10px 0 0;opacity:.75}
 #plaqueText{margin-top:8px;flex:1 1 auto;width:100%;min-height:0;display:flex;align-items:center;justify-content:center}
 #plaqueText span{display:block;font-family:"Playfair Display",serif;font-style:italic;font-weight:500;line-height:1.28}
 #plaqueFade{transition:opacity .7s ease;display:flex;flex-direction:column;align-items:center;width:100%;height:100%}
 #plaqueFade.out{opacity:0}
 
-#tefillahSec{flex:1 1 auto;min-height:0;overflow:hidden}
+#tefillahSec{flex:0 0 196px;min-height:0;overflow:hidden}
 #tefillahRows{display:grid;grid-template-columns:1fr 1fr;column-gap:40px;direction:rtl}
 #tefillahRows .row{font-size:23px}
 #tefillahRows .row:nth-child(2){border-top:0}
@@ -154,7 +155,6 @@ main{top:140px !important;bottom:32px !important;left:44px !important;right:44px
     <section class="col" id="wallCol">
       <div class="label">Add Your Voice</div>
       <h2>Our Monthly Partners</h2>
-      <div class="intro">Thank you to the partners whose monthly support sustains the Yeshiva.</div>
       <div id="wallBox"><div id="wallInner"></div></div>
     </section>
 
@@ -451,7 +451,7 @@ function fitText(box, span, max, min){
 function showPlaque(items){
   var it=items[plaqueIdx%items.length];
   $("plaqueTitle").textContent=it.title; $("plaqueSub").textContent=it.sub;
-  var box=$("plaqueText"), sp=box.firstChild; sp.textContent=it.text; fitText(box, sp, 40, 20);
+  var box=$("plaqueText"), sp=box.firstChild; sp.textContent=it.text; fitText(box, sp, 50, 22);
 }
 function renderPlaque(items){
   var key=JSON.stringify(items);
@@ -509,16 +509,21 @@ function photoList(rows){
 function setPhotos(list){
   var next=(list && list.length)?list:FALLBACK_PHOTOS;
   if(JSON.stringify(next)===JSON.stringify(photos)) return;
-  photos=next; if(slideIdx<0) nextSlide();
+  var wasFallback=(photos===FALLBACK_PHOTOS||!photos.length);
+  photos=next;
+  /* new emailed photos: show the newest one right away instead of waiting for the rotation */
+  if(slideIdx<0 || wasFallback || next[0]!==shownFirst){ shownFirst=next[0]; slideIdx=-1; clearTimeout(slideTimer); nextSlide(); }
 }
-function makeLayer(){ var s=el("div","slide"), bg=el("div","bg"), im=new Image(); im.alt=""; s.append(bg,im); $("photoFrame").append(s); return s; }
+var shownFirst="";
+function makeLayer(){ var s=el("div","slide"), bg=el("div","bg"), im=new Image(); im.alt=""; im.referrerPolicy="no-referrer"; /* Google Drive images refuse some referrers */ s.append(bg,im); $("photoFrame").append(s); return s; }
 function nextSlide(tries){
-  tries=tries||0; if(!photos.length || tries>photos.length) return;
+  tries=tries||0; if(!photos.length) return;
+  /* none of the emailed photos would load: show the yeshiva photos instead of a blank frame (tries again at the next data refresh) */
+  if(tries>photos.length){ if(photos!==FALLBACK_PHOTOS){ photos=FALLBACK_PHOTOS; slideIdx=-1; nextSlide(); } return; }
   if(!layers.length) layers=[makeLayer(),makeLayer()];
   slideIdx=(slideIdx+1)%photos.length;
   var url=photos[slideIdx], cur=layers[0], nxt=layers[1], im=nxt.querySelector("img");
   im.onload=function(){
-    nxt.querySelector(".bg").style.backgroundImage="url(\""+url+"\")";
     nxt.classList.remove("on"); void nxt.offsetWidth; nxt.classList.add("on"); cur.classList.remove("on");
     layers=[nxt,cur];
     clearTimeout(slideTimer); slideTimer=setTimeout(nextSlide, SLIDE_SEC*1000);

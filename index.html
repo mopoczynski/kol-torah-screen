@@ -286,25 +286,32 @@ function parshaText(d){
 function tickClock(){ $("clock").textContent=fmtMins(Math.floor(minsOfDay(new Date()))); }
 
 /* ================= zmanim ================= */
+/* Same definitions as MyZmanim (Inwood), shown as the hour:minute of MyZmanim's time (seconds dropped):
+   alos 16.1°, talis & tefillin 10.2°, sea-level netz/shkia, MGA shma 16.1°, mincha gedola lechumra
+   (later of 30 min after chatzos or half a GRA hour), plag GRA, tzeis 60 min after shkia */
 var ZMANIM=[
-  ["עלות השחר","alotHaShachar72","up"],
-  ["זמן טלית ותפילין","misheyakir","up"],
-  ["הנץ החמה","neitzHaChama","up"],
-  ["סוף זמן ק״ש מג״א","sofZmanShmaMGA","down"],
-  ["סוף זמן ק״ש גר״א","sofZmanShma","down"],
-  ["סוף זמן תפילה גר״א","sofZmanTfilla","down"],
-  ["חצות היום","chatzot","near"],
-  ["מנחה גדולה","minchaGedola","up"],
-  ["פלג המנחה","plagHaMincha","up"],
-  ["שקיעת החמה","shkiah","down"],
-  ["צאת הכוכבים","tzeis60","up"]
+  ["עלות השחר","alotHaShachar"],
+  ["זמן טלית ותפילין","misheyakirMachmir"],
+  ["הנץ החמה","neitzHaChama"],
+  ["סוף זמן ק״ש מג״א","sofZmanShmaMGA16Point1"],
+  ["סוף זמן ק״ש גר״א","sofZmanShma"],
+  ["סוף זמן תפילה גר״א","sofZmanTfilla"],
+  ["חצות היום","chatzot"],
+  ["מנחה גדולה","minchaGedolaLechumra"],
+  ["פלג המנחה","plagHaMincha"],
+  ["שקיעת החמה","shkiah"],
+  ["צאת הכוכבים","tzeis60"]
 ];
+function zmanDate(z,key){
+  if(key==="minchaGedolaLechumra"){ var a=z.chatzot().getTime()+30*60000, b=z.minchaGedola().getTime(); return new Date(Math.max(a,b)); }
+  return z[key]();
+}
 function renderZmanim(now){
-  var z=zman(now), nowM=minsOfDay(new Date()), isToday=!TEST_DATE, box=$("zmanimRows"), out=[], nextDone=false;
+  var z=zman(now), nowM=minsOfDay(new Date()), isToday=!TEST_DATE, box=$("zmanimRows"), out=[], nextDone=false, shkM=null;
   ZMANIM.forEach(function(r){
-    var d; try{ d = r[1]==="tzeis60" ? new Date(z.shkiah().getTime()+TZEIS_AFTER_SHKIA*60000) : z[r[1]](); }catch(e){ d=null; }
-    if(!valid(d)) return;
-    var m=roundM(minsOfDay(d), r[2]);
+    var m;
+    if(r[1]==="tzeis60"){ if(shkM==null) return; m=shkM+TZEIS_AFTER_SHKIA; }   /* exactly 60 min after the shkia shown */
+    else { var d; try{ d=zmanDate(z,r[1]); }catch(e){ d=null; } if(!valid(d)) return; m=Math.floor(minsOfDay(d)); if(r[1]==="shkiah") shkM=m; }
     var row=el("div","row"); row.append(el("span","l",r[0]), el("span","t",fmtMins(m)));
     if(isToday){ if(m<=nowM) row.classList.add("past"); else if(!nextDone){ row.classList.add("next"); nextDone=true; } }
     out.push(row);
@@ -401,6 +408,8 @@ function shabbosTimes(now){
   var candle=Math.floor(shkF-SHABBOS.candleMin);
   var mincha=Math.round((shkS-SHABBOS.minchaBeforeShkia)/5)*5; if(shkS-mincha<SHABBOS.minchaMinGap) mincha-=5;
   var maariv=Math.ceil(shkS+SHABBOS.maarivAfterShkia);
+  /* Out / off Shabbos (Beis Medrash calendar, same NO_YESHIVA list as the website): no tefillos in the yeshiva */
+  if(closed.has(todayISO(sat))) return { parsha: parshaText(sat), out:true, rows:[["הדלקת נרות", fmtMins(candle)]], isToday: dow===5||dow===6 };
   return { parsha: parshaText(sat), rows:[
     ["הדלקת נרות", fmtMins(candle)],
     ["מנחה וקבלת שבת", fmtMins(candle)],
@@ -429,6 +438,7 @@ function renderDavening(now, rows){
     out.push(sub("שבת קודש", sh.parsha));
     var sb=el("div","rows");
     sh.rows.forEach(function(r){ var row=el("div","row"); row.append(el("span","l",r[0]), el("span","t",r[1])); if(sh.isToday) row.classList.add("today"); sb.append(row); });
+    if(sh.out){ var nr=el("div","row"); nr.append(el("span","l","אין תפילות בישיבה בשבת זו")); sb.append(nr); }
     out.push(sb);
   }catch(e){}
   box.replaceChildren.apply(box,out);

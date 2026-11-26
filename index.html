@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="esp-boxes">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -110,7 +110,7 @@ main{position:absolute;left:40px;right:40px;top:128px;bottom:24px;display:grid;g
 #plaqueFade{transition:opacity .7s ease;display:flex;flex-direction:column;align-items:center;width:100%;height:100%}
 #plaqueFade.out{opacity:0}
 
-#tefillahSec{flex:0 0 196px;min-height:0;overflow:hidden}
+#tefillahSec{flex:0 0 212px;min-height:0;overflow:hidden}
 #tefillahRows{display:grid;grid-template-columns:1fr 1fr;column-gap:40px;direction:rtl}
 #tefillahRows .row{font-size:23px}
 #tefillahRows .row:nth-child(2){border-top:0}
@@ -141,6 +141,11 @@ main{top:140px !important;bottom:32px !important;left:44px !important;right:44px
 #photoFrame{height:356px !important}
 #timesCol .row{height:32px !important;line-height:32px !important}
 #status{right:26px !important;bottom:20px !important}
+/* היום בתפילה uses the same Hebrew lettering as the zmanim */
+#tefillahRows{font-family:"Frank Ruhl Libre",serif}
+/* option: espresso borders around each section (class set on <html>) */
+html.esp-boxes .box, html.esp-boxes #wallCol, html.esp-boxes #photoFrame{border:3px solid var(--frame) !important}
+html.esp-boxes #plaque{border:3px solid var(--frame) !important;box-shadow:inset 0 0 0 2px var(--gold)}
 </style>
 </head>
 <body>
@@ -228,11 +233,15 @@ setTheme(themeQ);
 /* Preview only (not on the TV): a small bar to try the background colors */
 if(DEMO){ document.documentElement.classList.add("pick"); var bar=document.createElement("div"); bar.id="themePick"; bar.append("Background:");
   THEMES.forEach(function(th){ var bt=document.createElement("button"); bt.textContent=th[1]; bt.style.background=th[2]; if(/^#[0-3]/.test(th[2])) bt.style.color="#fff"; if((themeQ||"stone")===th[0]) bt.className="on";
-    bt.onclick=function(){ setTheme(th[0]); [].forEach.call(bar.querySelectorAll("button:not([data-f])"),function(x){x.className="";}); bt.className="on"; }; bar.append(bt); });
+    bt.onclick=function(){ setTheme(th[0]); [].forEach.call(bar.querySelectorAll("button:not([data-f]):not([data-b])"),function(x){x.className="";}); bt.className="on"; }; bar.append(bt); });
   var FRAMES=[["Espresso","#2B2620"],["Kol Torah blue","#1B6FB5"],["Gold","#B8924A"],["Charcoal","#1A1A1A"],["Forest","#1F3A2B"],["Wine","#5A1F2B"],["None","transparent"]];
   bar.append(document.createElement("br"), "Frame:"); bar.style.flexWrap="wrap"; bar.style.maxWidth="760px";
   FRAMES.forEach(function(fr,k){ var bt=document.createElement("button"); bt.textContent=fr[0]; bt.dataset.f="1"; bt.style.background=fr[1]==="transparent"?"#ddd":fr[1]; bt.style.color=(k===2||k===6)?"#111":"#fff"; if(k===0) bt.className="on";
     bt.onclick=function(){ document.documentElement.style.setProperty("--frame",fr[1]); [].forEach.call(bar.querySelectorAll("button[data-f]"),function(x){x.className="";}); bt.className="on"; }; bar.append(bt); });
+  var BOXES=[["Light",false],["Espresso",true]]; bar.append(document.createElement("br"), "Section borders:");
+  document.documentElement.classList.add("esp-boxes");
+  BOXES.forEach(function(bx){ var bt=document.createElement("button"); bt.textContent=bx[0]; bt.dataset.b="1"; bt.style.background=bx[1]?"#2B2620":"#CBC1AD"; bt.style.color=bx[1]?"#fff":"#111"; if(bx[1]) bt.className="on";
+    bt.onclick=function(){ document.documentElement.classList.toggle("esp-boxes",bx[1]); [].forEach.call(bar.querySelectorAll("button[data-b]"),function(x){x.className="";}); bt.className="on"; }; bar.append(bt); });
   document.body.append(bar); }
 
 var H = window.hebcal;
